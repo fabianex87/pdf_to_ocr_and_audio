@@ -54,22 +54,55 @@ def set_voice_by_language(engine, lang):
         'eng': 'english'
     }
     
-    voice_selected = False
     voices = engine.getProperty('voices')
+    available_voices = [
+        voice for voice in voices if lang_map.get(lang, 'english') in voice.name.lower()
+    ]
     
-    for voice in voices:
-        if lang_map.get(lang, 'english') in voice.name.lower():
-            engine.setProperty('voice', voice.id)
-            voice_selected = True
-            print(f"✅ Voce selezionata: {voice.name} ({voice.id})")
-            break
-    
-    if not voice_selected:
+    if not available_voices:
         raise ValueError(f"❌ Nessuna voce trovata per la lingua '{lang}'. Verifica le voci installate.")
+    
+    print("\n🎙️ **Voci Disponibili per la Lingua Selezionata:**")
+    for index, voice in enumerate(available_voices):
+        print(f"{index + 1}. {voice.name} ({voice.id})")
+    
+    # 🔄 Richiesta di input all'utente per selezionare la voce
+    try:
+        choice = input("\n👉 Seleziona il numero della voce desiderata (Premi INVIO per usare la prima disponibile): ").strip()
+        if choice.isdigit() and 1 <= int(choice) <= len(available_voices):
+            selected_voice = available_voices[int(choice) - 1]
+        else:
+            selected_voice = available_voices[0]  # Default alla prima voce se non viene selezionato nulla
+        
+        engine.setProperty('voice', selected_voice.id)
+        print(f"✅ Voce selezionata: {selected_voice.name} ({selected_voice.id})")
+    
+    except Exception as e:
+        print(f"❌ Errore nella selezione della voce: {e}")
+        engine.setProperty('voice', available_voices[0].id)
+        print(f"✅ Voce di default selezionata: {available_voices[0].name} ({available_voices[0].id})")
 
 
-# ✅ 4️⃣ **PDF OCR → Audio (Audiolibro con Partizionamento)**
-def pdf_to_audio(pdf_path, audio_path, lang='spa'):
+# ✅ 4️⃣ **Aumentare il Volume con FFmpeg (Opzionale)**
+def adjust_audio_volume(input_file, output_file, volume_factor=1.5):
+    try:
+        print(f"🔊 Aumento del volume con FFmpeg (Fattore: {volume_factor})...")
+        command = [
+            r"C:\ffmpeg\bin\ffmpeg.exe",
+            '-i', input_file,
+            '-filter:a', f"volume={volume_factor}",
+            '-y', output_file
+        ]
+        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print(f"✅ Volume aumentato con successo: {output_file}")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Errore FFmpeg durante l'aumento del volume:\n{e.stderr}")
+    except Exception as e:
+        print(f"❌ Errore nell'aumento del volume: {e}")
+
+
+# ✅ 5️⃣ **PDF OCR → Audio (Audiolibro con Partizionamento)**
+def pdf_to_audio(pdf_path, audio_path, lang='spa', rate=150, volume=1.0, ffmpeg_volume=None):
     try:
         pdf_document = fitz.open(pdf_path)
         text = ''
@@ -80,9 +113,13 @@ def pdf_to_audio(pdf_path, audio_path, lang='spa'):
         if not text.strip():
             raise ValueError("❌ Nessun testo trovato nel PDF OCR.")
         
+        # ✅ Rimuovi le interruzioni di riga per evitare pause indesiderate
+        text = text.replace('\n', ' ').replace('\r', ' ')
+        
         engine = pyttsx3.init()
         set_voice_by_language(engine, lang)
-        engine.setProperty('rate', 150)
+        engine.setProperty('rate', rate)  # Velocità dell'audio
+        engine.setProperty('volume', volume)  # Volume dell'audio (0.0 - 1.0)
         
         # Salva temporaneamente come WAV
         temp_wav = 'temp_audio.wav'
@@ -105,14 +142,19 @@ def pdf_to_audio(pdf_path, audio_path, lang='spa'):
         os.remove(temp_wav)
         print(f"✅ Audiolibro compresso salvato con successo: {compressed_audio_path}")
         
-        # ✅ Dividi il file AAC in parti da 16 MB
+        # ✅ Opzionale: Aumenta il volume con FFmpeg
+        if ffmpeg_volume:
+            adjusted_audio_path = compressed_audio_path.replace('.aac', '_loud.aac')
+            adjust_audio_volume(compressed_audio_path, adjusted_audio_path, ffmpeg_volume)
+            compressed_audio_path = adjusted_audio_path
+        
+        # ✅ Dividi il file AAC in parti da 15 MB
         split_audio_into_parts(compressed_audio_path, 15)
     
     except subprocess.CalledProcessError as e:
         print(f"❌ Errore FFmpeg:\n{e.stderr}")
     except Exception as e:
         print(f"❌ Errore nell'audiolibro: {e}")
-
 
 # ✅ 5️⃣ **Dividere il File MP3 in Parti da 15 MB**
 def split_audio_into_parts(input_file, max_mb=16):
@@ -158,13 +200,19 @@ def split_audio_into_parts(input_file, max_mb=16):
 
 
 # ✅ 6️⃣ **Workflow Completo**
-def pdf_to_ocr_and_audio(input_pdf, ocr_pdf, audio_file, lang='spa'):
-    print("🔄 Avvio processo PDF → PDF OCR → Audiolibro...")
-    pdf_to_ocr_pdf(input_pdf, ocr_pdf, lang=lang)
-    lang_audio = {'spa': 'spa', 'ita': 'ita', 'eng': 'eng'}.get(lang, 'eng')
-    pdf_to_audio(ocr_pdf, audio_file, lang=lang_audio)
-    print("🎉 Processo completato con successo!")
+def pdf_to_ocr_and_audio(input_folder, output_folder, lang='spa', rate=150, volume=1.0, ffmpeg_volume=None):
+    os.makedirs(output_folder, exist_ok=True)
+    for file in os.listdir(input_folder):
+        if file.endswith('.pdf'):
+            pdf_path = os.path.join(input_folder, file)
+            base_name = os.path.splitext(file)[0]
+            book_output_folder = os.path.join(output_folder, base_name)
+            os.makedirs(book_output_folder, exist_ok=True)
+            ocr_pdf = os.path.join(book_output_folder, f"{base_name}_ocr.pdf")
+            audio_file = os.path.join(book_output_folder, f"{base_name}.aac")
+            pdf_to_ocr_pdf(pdf_path, ocr_pdf, lang)
+            pdf_to_audio(ocr_pdf, audio_file, lang, rate, volume, ffmpeg_volume)
 
 
 # ✅ 7️⃣ **Esempio di utilizzo**
-pdf_to_ocr_and_audio('documento.pdf', 'documento_ocr.pdf', 'audiolibro.aac', lang='spa')
+pdf_to_ocr_and_audio('input_folder', 'output_folder', lang='spa', rate=180, volume=1.0, ffmpeg_volume=1.5)
