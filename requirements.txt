@@ -1,0 +1,6 @@
+# Node.js Version: 16.17.0 (Optional)
+PyMuPDF==1.21.1
+pillow==10.2.0
+pytesseract==0.3.10
+pyttsx3==2.90
+pydub==0.25.1
