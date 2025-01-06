@@ -1,5 +1,0 @@
-Nota
-
-“ Este vídeo fue producido originariamente por el Círculo del Programa de
-Intervención en Seguridad. Véase su gran trabajo en el libro The Circle of Security
-Intervention, de Bert Powell et al (Guilford Press, Nueva York, 2013).
