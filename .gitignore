@@ -1,0 +1,20 @@
+# Ignore input and output folders
+input_folder/
+output_folder/
+
+# Temporary files
+*.tmp
+*.log
+*.wav
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Virtual Environment
+venv/
+.env/
