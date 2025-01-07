@@ -33,7 +33,7 @@ python main.py
 ```
 
 ```python
-python main.py --input input_folder --output output_folder --lang spa --rate 170 --volume 1.0
+python main.py --input input_folder --output output_folder --lang spa --rate 150 --volume 1.0
 ```
 #### Execution with Custom Parameters:
 ```python
