@@ -48,7 +48,7 @@ def pdf_to_ocr_pdf(pdf_path, output_pdf_path, lang='spa'):
 
 
 # ✅ 3️⃣ **Select Correct Voice**
-def set_voice_by_language(engine, lang):
+def set_voice_by_language(engine, lang, voice_index=None):
     lang_map = {
         'spa': 'spanish',
         'ita': 'italian',
@@ -67,11 +67,15 @@ def set_voice_by_language(engine, lang):
     for index, voice in enumerate(available_voices):
         print(f"{index + 1}. {voice.name} ({voice.id})")
     
+    # ✅ Selezione tramite indice fornito
     try:
-        choice = input("\n👉 Select the desired voice number (Press ENTER to use the first one): ").strip()
-        if choice.isdigit() and 1 <= int(choice) <= len(available_voices):
-            selected_voice = available_voices[int(choice) - 1]
+        if voice_index is not None:
+            if 1 <= voice_index <= len(available_voices):
+                selected_voice = available_voices[voice_index - 1]
+            else:
+                raise ValueError("Voice index out of range.")
         else:
+            # Default to the first available voice
             selected_voice = available_voices[0]
         
         engine.setProperty('voice', selected_voice.id)
@@ -136,7 +140,7 @@ def split_audio_into_parts(input_file, max_mb=16):
 
 
 # ✅ 6️⃣ **PDF OCR → Audio**
-def pdf_to_audio(pdf_path, audio_path, lang='spa', rate=150, volume=1.0, ffmpeg_volume=None):
+def pdf_to_audio(pdf_path, audio_path, lang='spa', rate=150, volume=1.0, ffmpeg_volume=None, voice_index=None):
     try:
         pdf_document = fitz.open(pdf_path)
         text = ''.join(page.get_text() for page in pdf_document)
@@ -145,7 +149,7 @@ def pdf_to_audio(pdf_path, audio_path, lang='spa', rate=150, volume=1.0, ffmpeg_
         text = text.replace('\n', ' ').replace('\r', ' ')
         
         engine = pyttsx3.init()
-        set_voice_by_language(engine, lang)
+        set_voice_by_language(engine, lang, voice_index)
         engine.setProperty('rate', rate)
         engine.setProperty('volume', volume)
         
@@ -161,21 +165,19 @@ def pdf_to_audio(pdf_path, audio_path, lang='spa', rate=150, volume=1.0, ffmpeg_
         os.remove(temp_wav)
         print(f"✅ Audiobook saved: {compressed_audio_path}")
         
-        # ✅ Optional: Increase volume with FFmpeg
         if ffmpeg_volume:
             adjusted_audio_path = compressed_audio_path.replace('.aac', '_loud.aac')
             adjust_audio_volume(compressed_audio_path, adjusted_audio_path, ffmpeg_volume)
             compressed_audio_path = adjusted_audio_path
         
-        # ✅ Split AAC file into 15 MB parts
         split_audio_into_parts(compressed_audio_path, 15)
     
     except Exception as e:
         print(f"❌ Audio Error: {e}")
 
-
 # ✅ 7️⃣ **Main Workflow**
-def pdf_to_ocr_and_audio(input_folder, output_folder, lang='spa', rate=150, volume=1.0, ffmpeg_volume=None):
+# ✅ 7️⃣ **Main Workflow**
+def pdf_to_ocr_and_audio(input_folder, output_folder, lang='spa', rate=150, volume=1.0, ffmpeg_volume=None, voice_index=None):
     os.makedirs(output_folder, exist_ok=True)
     for file in os.listdir(input_folder):
         if file.endswith('.pdf'):
@@ -190,11 +192,10 @@ def pdf_to_ocr_and_audio(input_folder, output_folder, lang='spa', rate=150, volu
             audio_file = os.path.join(book_output_folder, f"{base_name}.aac")
             
             pdf_to_ocr_pdf(pdf_path, ocr_pdf, lang)
-            pdf_to_audio(ocr_pdf, audio_file, lang, rate, volume, ffmpeg_volume)
+            pdf_to_audio(ocr_pdf, audio_file, lang, rate, volume, ffmpeg_volume, voice_index=voice_index)
 
 # ✅ 8️⃣ **Run from Command Line**
 if __name__ == '__main__':
-    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', required=False, help="Folder with input PDF files")
     parser.add_argument('--output', required=False, help="Folder for output files")
@@ -202,10 +203,10 @@ if __name__ == '__main__':
     parser.add_argument('--rate', type=int, default=150, help="Speech rate (default: 150)")
     parser.add_argument('--volume', type=float, default=1.0, help="Speech volume (default: 1.0)")
     parser.add_argument('--ffmpeg_volume', type=float, default=None, help="FFmpeg volume boost (default: None)")
-    
+    parser.add_argument('--voice_index', type=int, default=None, help="Voice index (1-based, optional)")
+
     args = parser.parse_args()
     
-    # ✅ Imposta i valori di default se non vengono forniti
     if not args.input:
         print("⚠️ '--input' not provided. Using default: 'input_folder'")
         args.input = 'input_folder'
@@ -213,13 +214,12 @@ if __name__ == '__main__':
         print("⚠️ '--output' not provided. Using default: 'output_folder'")
         args.output = 'output_folder'
     
-    # ✅ Avvia il processo principale
     pdf_to_ocr_and_audio(
         input_folder=args.input,
         output_folder=args.output,
         lang=args.lang,
         rate=args.rate,
         volume=args.volume,
-        ffmpeg_volume=args.ffmpeg_volume
+        ffmpeg_volume=args.ffmpeg_volume,
+        voice_index=args.voice_index
     )
-
