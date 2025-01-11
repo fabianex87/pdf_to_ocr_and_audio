@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Audiobook Converter</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>PDF to Audiobook Converter</h1>
+    </header>
+    <div class="container">
+        <h2>Upload Your PDF</h2>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="pdf" accept=".pdf" required>
+            <label for="lang">Language:</label>
+            <select name="lang" id="lang">
+                <option value="spa" selected>Spanish</option>
+                <option value="eng">English</option>
+                <option value="ita">Italian</option>
+            </select>
+            <label for="rate">Speech Rate (Default: 150):</label>
+            <input type="number" name="rate" value="150" min="100" max="300">
+            <label for="volume">Volume (Default: 1.0):</label>
+            <input type="number" name="volume" step="0.1" value="1.0" min="0.5" max="2.0">
+            <label for="ffmpeg_volume">FFmpeg Volume Boost (Default: 1.0):</label>
+            <input type="number" name="ffmpeg_volume" step="0.1" value="1.0" min="0.5" max="3.0">
+            <button type="submit">Convert</button>
+        </form>
+        <hr>
+        <h2>Download Section</h2>
+        <p>Click below to view all converted audiobooks:</p>
+        <a href="/download/all" class="button">Go to Downloads</a>
+    </div>
+</body>
+</html>

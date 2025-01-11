@@ -75,7 +75,6 @@ def set_voice_by_language(engine, lang, voice_index=None):
             else:
                 raise ValueError("Voice index out of range.")
         else:
-            # Default to the first available voice
             selected_voice = available_voices[0]
         
         engine.setProperty('voice', selected_voice.id)
@@ -175,22 +174,23 @@ def pdf_to_audio(pdf_path, audio_path, lang='spa', rate=150, volume=1.0, ffmpeg_
     except Exception as e:
         print(f"❌ Audio Error: {e}")
 
-# ✅ 7️⃣ **Main Workflow**
+
 # ✅ 7️⃣ **Main Workflow**
 def pdf_to_ocr_and_audio(input_folder, output_folder, lang='spa', rate=150, volume=1.0, ffmpeg_volume=None, voice_index=None):
     os.makedirs(output_folder, exist_ok=True)
+    
     for file in os.listdir(input_folder):
         if file.endswith('.pdf'):
             pdf_path = os.path.join(input_folder, file)
             base_name = os.path.splitext(file)[0]
-            
-            # 🗂️ Create a subfolder for each PDF file
-            book_output_folder = os.path.join(output_folder, base_name)
+
+            # 🗂️ Create a subfolder for this specific PDF
+            book_output_folder = output_folder
             os.makedirs(book_output_folder, exist_ok=True)
 
             ocr_pdf = os.path.join(book_output_folder, f"{base_name}_ocr.pdf")
             audio_file = os.path.join(book_output_folder, f"{base_name}.aac")
-            
+
             pdf_to_ocr_pdf(pdf_path, ocr_pdf, lang)
             pdf_to_audio(ocr_pdf, audio_file, lang, rate, volume, ffmpeg_volume, voice_index=voice_index)
 
@@ -204,6 +204,7 @@ if __name__ == '__main__':
     parser.add_argument('--volume', type=float, default=1.0, help="Speech volume (default: 1.0)")
     parser.add_argument('--ffmpeg_volume', type=float, default=None, help="FFmpeg volume boost (default: None)")
     parser.add_argument('--voice_index', type=int, default=None, help="Voice index (1-based, optional)")
+    parser.add_argument('--filename', required=False, help="Specific PDF filename to process (optional)")
 
     args = parser.parse_args()
     
@@ -217,6 +218,7 @@ if __name__ == '__main__':
     pdf_to_ocr_and_audio(
         input_folder=args.input,
         output_folder=args.output,
+        filename=args.filename,
         lang=args.lang,
         rate=args.rate,
         volume=args.volume,

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Your Audiobook</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Download Your Audiobook</h1>
+    </header>
+    <div class="container">
+        <p>Your files are ready for download:</p>
+        <ul>
+            {% for file in files %}
+            <li>
+                <a href="{{ url_for('download_file', folder=folder, filename=file) }}">{{ file }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+        <a href="/" class="button">Go back to upload another file</a>
+    </div>
+</body>
+</html>

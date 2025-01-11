@@ -11,6 +11,7 @@ This project converts PDF documents into:
 
 Make sure you have installed:
 - Python 3.10 or higher
+- Flask
 - FFmpeg
 - Tesseract OCR
 - Node.js 16.x or higher *(Optional, for future integrations)*
