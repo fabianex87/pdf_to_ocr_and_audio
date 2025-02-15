@@ -176,23 +176,27 @@ def pdf_to_audio(pdf_path, audio_path, lang='spa', rate=150, volume=1.0, ffmpeg_
 
 
 # ✅ 7️⃣ **Main Workflow**
-def pdf_to_ocr_and_audio(input_folder, output_folder, lang='spa', rate=150, volume=1.0, ffmpeg_volume=None, voice_index=None):
+def pdf_to_ocr_and_audio(input_folder, output_folder, filename=None, lang='spa', rate=150, volume=1.0, ffmpeg_volume=None, voice_index=None):
     os.makedirs(output_folder, exist_ok=True)
     
-    for file in os.listdir(input_folder):
-        if file.endswith('.pdf'):
-            pdf_path = os.path.join(input_folder, file)
-            base_name = os.path.splitext(file)[0]
+    if filename:
+        files = [filename]
+    else:
+        files = [file for file in os.listdir(input_folder) if file.endswith('.pdf')]
+    
+    for file in files:
+        pdf_path = os.path.join(input_folder, file)
+        base_name = os.path.splitext(file)[0]
 
-            # 🗂️ Create a subfolder for this specific PDF
-            book_output_folder = output_folder
-            os.makedirs(book_output_folder, exist_ok=True)
+        # 🗂️ Create a subfolder for this specific PDF
+        book_output_folder = os.path.join(output_folder, base_name)
+        os.makedirs(book_output_folder, exist_ok=True)
 
-            ocr_pdf = os.path.join(book_output_folder, f"{base_name}_ocr.pdf")
-            audio_file = os.path.join(book_output_folder, f"{base_name}.aac")
+        ocr_pdf = os.path.join(book_output_folder, f"{base_name}_ocr.pdf")
+        audio_file = os.path.join(book_output_folder, f"{base_name}.aac")
 
-            pdf_to_ocr_pdf(pdf_path, ocr_pdf, lang)
-            pdf_to_audio(ocr_pdf, audio_file, lang, rate, volume, ffmpeg_volume, voice_index=voice_index)
+        pdf_to_ocr_pdf(pdf_path, ocr_pdf, lang)
+        pdf_to_audio(ocr_pdf, audio_file, lang, rate, volume, ffmpeg_volume, voice_index=voice_index)
 
 # ✅ 8️⃣ **Run from Command Line**
 if __name__ == '__main__':
